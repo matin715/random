@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>កង់បង្វិលសំណាង - MATIN</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        h2 { font-size: 22px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+        /* --- 💡 ផ្នែកធ្វើឱ្យកង់មូលឥតខ្ចោះលើទូរសព្ទ --- */
+        .wheel-wrapper {
+            position: relative;
+            width: 85vw; /* កំណត់ទំហំតាមទទឹងអេក្រង់ទូរសព្ទ */
+            max-width: 350px; 
+            aspect-ratio: 1 / 1; /* បង្ខំឱ្យទទឹង និងកម្ពស់ស្មើគ្នាជានិច្ច (មូល) */
+            margin-bottom: 30px;
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%; /* ធ្វើឱ្យរង្វង់មូល */
+            border: 8px solid #fff;
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
+        }
+
+        /* ម្ជុលចង្អុល (ពណ៌ក្រហម) */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 35px;
+            background: #ff4757;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            border: 2px solid white;
+        }
+
+        /* --- ផ្នែកបញ្ចូលឈ្មោះ --- */
+        .controls {
+            width: 100%;
+            max-width: 350px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            margin-bottom: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        #spinBtn { background: #2ed573; color: white; }
+        #updateBtn { background: #f1f2f6; color: #333; font-size: 14px; }
+
+        /* --- Popup អ្នកឈ្នះ --- */
+        #winner-popup {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white; color: #333;
+            padding: 30px; border-radius: 25px;
+            text-align: center; z-index: 100;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 80%; max-width: 300px;
+        }
+        #winner-popup.show { transform: translate(-50%, -50%) scale(1); }
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; z-index: 90;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🎡 កង់បង្វិលផ្សងសំណាង</h2>
+
+    <div class="wheel-wrapper">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+    </div>
+
+    <div class="controls">
+        <textarea id="nameInput">សង្សារចាស់&#10;សុខ&#10;សៅ&#10;ដារ៉ា</textarea>
+        <button id="updateBtn" onclick="drawWheel()">Update ឈ្មោះ</button>
+        <button id="spinBtn">បង្វិល!</button>
+    </div>
+
+    <div id="overlay" class="overlay" onclick="closePopup()"></div>
+    <div id="winner-popup">
+        <h3 style="margin:0">🎊 អបអរសាទរ 🎊</h3>
+        <h1 id="winner-name" style="color:#ff4757; margin: 15px 0;"></h1>
+        <button onclick="closePopup()" style="background:#333; color:white;">បិទ</button>
+    </div>
+
+<script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const nameInput = document.getElementById('nameInput');
+    let names = [];
+    let currentRotation = 0;
+
+    function drawWheel() {
+        names = nameInput.value.split('\n').filter(n => n.trim() !== "");
+        if (names.length === 0) return;
+        const arcSize = (2 * Math.PI) / names.length;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        names.forEach((name, i) => {
+            const angle = i * arcSize;
+            ctx.beginPath();
+            ctx.fillStyle = `hsl(${i * (360 / names.length)}, 70%, 60%)`;
+            ctx.moveTo(250, 250);
+            ctx.arc(250, 250, 245, angle, angle + arcSize);
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(angle + arcSize / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "white";
+            ctx.font = "bold 26px Arial";
+            ctx.fillText(name, 230, 10);
+            ctx.restore();
+        });
+    }
+
+    document.getElementById('spinBtn').addEventListener('click', () => {
+        const spin = Math.floor(Math.random() * 360) + (360 * 10);
+        currentRotation += spin;
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+        setTimeout(() => {
+            const actualDeg = currentRotation % 360;
+            const arcSizeDeg = 360 / names.length;
+            // រូបមន្តគណនាឱ្យចំម្ជុលខាងលើ (270 ដឺក្រេ)
+            const winnerIndex = Math.floor((270 - actualDeg + 360 * 100) / arcSizeDeg) % names.length;
+            
+            document.getElementById('winner-name').innerText = names[winnerIndex];
+            document.getElementById('winner-popup').classList.add('show');
+            document.getElementById('overlay').style.display = 'block';
+        }, 4000);
+    });
+
+    function closePopup() {
+        document.getElementById('winner-popup').classList.remove('show');
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    drawWheel();
+</script>
+</body>
+</html>
