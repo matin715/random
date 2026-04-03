@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>កង់បង្វិលសំណាង</title>
+    <style>
+        /* កំណត់ឱ្យពេញអេក្រង់ និងមិនឱ្យអូសចុះឡើង */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            overflow: hidden; 
+            touch-action: none;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            font-family: 'Arial', sans-serif;
+            color: white;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+        }
+
+        h2 { margin: 5px 0; font-size: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+        /* ផ្នែកកង់បង្វិល */
+        .wheel-container {
+            position: relative;
+            width: 85vw;
+            max-width: 320px;
+            aspect-ratio: 1 / 1;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 5px solid #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
+        }
+
+        /* ប៊ូតុងចុចបង្វិលចំកណ្ដាល និងព្រួញ */
+        .center-btn {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px; height: 70px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            color: #333;
+            font-weight: bold;
+            font-size: 16px;
+            border: 4px solid #ff4757;
+        }
+
+        /* ព្រួញចង្អុលអ្នកឈ្នះ */
+        .center-btn::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 20px solid #ff4757;
+        }
+
+        /* ផ្នែកបញ្ជូលឈ្មោះ */
+        .input-area {
+            width: 90%;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            border-radius: 8px;
+            border: none;
+            padding: 8px;
+            font-size: 16px;
+            resize: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-group button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .del-one { background: #f1f2f6; color: #333; }
+        .del-all { background: #ff4757; color: white; }
+
+        /* Popup អ្នកឈ្នះ */
+        #winner-popup {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white; color: #333;
+            padding: 25px; border-radius: 20px;
+            text-align: center; z-index: 100;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 70%;
+        }
+        #winner-popup.show { transform: translate(-50%, -50%) scale(1); }
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; z-index: 90;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🎡 កង់បង្វិលសំណាង</h2>
+
+    <div class="wheel-container">
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+        <div class="center-btn" id="spinBtn">បង្វិល</div>
+    </div>
+
+    <div class="input-area">
+        <textarea id="nameInput" placeholder="វាយឈ្មោះនៅទីនេះ... (មួយជួរ មួយឈ្មោះ)" oninput="drawWheel()">សុខ&#10;សៅ&#10;ដារ៉ា</textarea>
+        <div class="btn-group">
+            <button class="del-one" onclick="removeLast()">លុបម្ដងមួយ</button>
+            <button class="del-all" onclick="clearAll()">លុបទាំងអស់</button>
+        </div>
+    </div>
+
+    <div id="overlay" class="overlay" onclick="closePopup()"></div>
+    <div id="winner-popup">
+        <h3 style="margin:0">🎊 អបអរសាទរ 🎊</h3>
+        <h1 id="winner-name" style="color:#ff4757; margin: 15px 0;"></h1>
+        <button onclick="closePopup()" style="width:100%; padding:10px; background:#333; color:white; border:none; border-radius:8px;">បិទ</button>
+    </div>
+
+<script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const nameInput = document.getElementById('nameInput');
+    let names = [];
+    let currentRotation = 0;
+    let isSpinning = false;
+
+    function drawWheel() {
+        names = nameInput.value.split('\n').filter(n => n.trim() !== "");
+        if (names.length === 0) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+        const arcSize = (2 * Math.PI) / names.length;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        names.forEach((name, i) => {
+            const angle = i * arcSize;
+            ctx.beginPath();
+            ctx.fillStyle = `hsl(${i * (360 / names.length)}, 70%, 60%)`;
+            ctx.moveTo(250, 250);
+            ctx.arc(250, 250, 245, angle, angle + arcSize);
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(angle + arcSize / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "white";
+            ctx.font = "bold 24px Arial";
+            ctx.fillText(name, 230, 10);
+            ctx.restore();
+        });
+    }
+
+    document.getElementById('spinBtn').addEventListener('click', () => {
+        if (isSpinning || names.length === 0) return;
+        isSpinning = true;
+        const spin = Math.floor(Math.random() * 360) + (360 * 10);
+        currentRotation += spin;
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+        setTimeout(() => {
+            const actualDeg = currentRotation % 360;
+            const arcSizeDeg = 360 / names.length;
+            // គណនាឱ្យចំម្ជុលព្រួញខាងលើ (270 ដឺក្រេ)
+            const winnerIndex = Math.floor((270 - actualDeg + 360 * 50) / arcSizeDeg) % names.length;
+            
+            document.getElementById('winner-name').innerText = names[winnerIndex];
+            document.getElementById('winner-popup').classList.add('show');
+            document.getElementById('overlay').style.display = 'block';
+            isSpinning = false;
+        }, 4000);
+    });
+
+    function removeLast() {
+        const list = nameInput.value.trim().split('\n');
+        list.pop();
+        nameInput.value = list.join('\n');
+        drawWheel();
+    }
+
+    function clearAll() {
+        nameInput.value = "";
+        drawWheel();
+    }
+
+    function closePopup() {
+        document.getElementById('winner-popup').classList.remove('show');
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    drawWheel();
+</script>
+</body>
+</html>
