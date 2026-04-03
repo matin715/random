@@ -1,0 +1,209 @@
+<div id="wheelBox" class="fn-area">
+    <div class="ultimate-wheel-wrapper">
+        
+        <!-- Header -->
+        <div class="wheel-header">
+            <h3 class="wheel-title">កង់បង្វិលសំណាង</h3>
+            <button class="add-name-btn" onclick="showNamePanel()">
+                <i class="fas fa-plus-circle"></i> បញ្ចូលឈ្មោះ
+            </button>
+        </div>
+
+        <!-- Main Body -->
+        <div class="wheel-body">
+            <div class="wheel-container">
+                <div class="pointer-fixed"></div>
+                <canvas id="wheelCanvas" width="800" height="800"></canvas>
+                <div class="spin-btn-fixed" onclick="spinWheel()">SPIN</div>
+            </div>
+            
+            <!-- ថែមឃ្លាខាងក្រោមបន្តិចដើម្បីឱ្យដឹងថាអាចអូសបានពេលផ្ដេក -->
+            <div class="landscape-hint" style="display:none; color: white; padding: 20px; text-align: center; opacity: 0.7;">
+                អូសឡើងលើដើម្បីមើលបន្ថែម ↑
+            </div>
+        </div>
+
+        <!-- Popups -->
+        <div id="namePanel" class="modal-full">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <h2 style="margin:0; font-size: 24px;">បញ្ជីឈ្មោះ</h2>
+                    <button onclick="clearAllNames()" class="btn-clear">លុបទាំងអស់</button>
+                </div>
+                <div class="input-wrap">
+                    <input type="text" id="newName" placeholder="វាយឈ្មោះ...">
+                    <button onclick="addName()" style="padding: 0 25px; font-size: 18px;">ថែម</button>
+                </div>
+                <div class="list-container"><ul id="nameList"></ul></div>
+                <button class="btn-primary" onclick="hideNamePanel()" style="font-size: 20px;">រួចរាល់</button>
+            </div>
+        </div>
+
+        <div id="winnerPanel" class="modal-full" style="background: rgba(0,0,0,0.92);">
+            <div class="winner-box">
+                <h1 style="color:#333; margin-top:0; font-size: 28px;">🎉 អបអរសាទរ!</h1>
+                <div id="winnerNameDisplay" class="winner-name-text">---</div>
+                <button class="btn-primary" onclick="closeWinner()" style="font-size: 20px;">បង្វិលម្តងទៀត</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 👑 កំណត់ឱ្យបញ្ឈរអត់ Scroll (ដើម្បី Refresh បាន) */
+        .ultimate-wheel-wrapper {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #ff1493; display: flex; flex-direction: column;
+            overflow-y: hidden; /* ហាម Scroll ពេលបញ្ឈរ */
+            font-family: 'Battambang', Arial;
+        }
+
+        .wheel-header {
+            flex: 0 0 auto; padding: 20px 15px; display: flex;
+            justify-content: space-between; align-items: center; z-index: 100;
+        }
+        .wheel-title { color: yellow; margin: 0; font-size: 26px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+        .add-name-btn { padding: 12px 25px; border-radius: 30px; border: none; background: white; color: #ff1493; font-weight: 900; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        .wheel-body {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; min-height: min-content;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 95vw; height: 95vw;
+            max-width: 92vh; max-height: 92vh;
+            margin: 10px 0;
+        }
+
+        #wheelCanvas { width: 100%; height: 100%; border-radius: 50%; border: 5px solid white; background: #fff; box-shadow: 0 5px 30px rgba(0,0,0,0.5); }
+
+        .spin-btn-fixed {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 19%; height: 19%; background: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; color: #ff1493; border: 4px solid #ff1493;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-size: clamp(14px, 5vw, 22px); z-index: 50;
+        }
+
+        .pointer-fixed {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 18px solid transparent;
+            border-right: 18px solid transparent; border-top: 40px solid yellow;
+            z-index: 60; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+        }
+
+        /* 📱 លក្ខខណ្ឌពេលផ្ដេក (Landscape) */
+        @media (orientation: landscape) {
+            .ultimate-wheel-wrapper {
+                position: absolute; /* ដូរពី fixed មក absolute ដើម្បីឱ្យ Scroll បាន */
+                overflow-y: auto; /* ✅ អនុញ្ញាតឱ្យអូសចុះឡើង */
+                -webkit-overflow-scrolling: touch;
+            }
+            .wheel-body {
+                justify-content: flex-start; /* ឱ្យវាផ្ដើមពីលើទៅ */
+                padding: 20px 0;
+            }
+            .wheel-container {
+                width: 80vh; height: 80vh; /* រក្សាទំហំកង់ឱ្យសមនឹងកម្ពស់ */
+            }
+            .landscape-hint { display: block !important; } /* បង្ហាញពាក្យប្រាប់ឱ្យអូស */
+            .wheel-header { padding: 10px 20px; }
+            .wheel-title { font-size: 20px; }
+            .add-name-btn { padding: 8px 20px; font-size: 15px; }
+        }
+
+        /* Popup Styles */
+        .modal-full { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-box { background: white; width: 92%; max-width: 450px; max-height: 85vh; border-radius: 25px; padding: 25px; display: flex; flex-direction: column; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .input-wrap { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-wrap input { flex: 1; padding: 15px; border: 2px solid #eee; border-radius: 12px; font-size: 18px; outline: none; }
+        .list-container { flex: 1; overflow-y: auto; margin-bottom: 15px; border-top: 1px solid #eee; }
+        #nameList li { display: flex; justify-content: space-between; padding: 15px; background: #f8f8f8; margin-top: 8px; border-radius: 12px; font-size: 18px; font-weight: bold; }
+        .btn-clear { background: #ff4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
+        .btn-primary { width: 100%; padding: 18px; background: #ff1493; color: white; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
+        .winner-box { background: white; width: 85%; max-width: 400px; border-radius: 35px; padding: 40px; text-align: center; }
+        .winner-name-text { font-size: 60px; font-weight: bold; color: #ff1493; margin: 25px 0; }
+    </style>
+
+    <script>
+        let names = ["ហេង", "សំណាង", "លាភ", "ជ័យ", "មាស", "ប្រាក់"];
+        const colors = ["#ff1493", "#333333", "#ff69b4", "#1a1a1a", "#ff007f", "#444444"];
+        let startAngle = 0;
+        let isSpinning = false;
+
+        function drawWheel() {
+            const canvas = document.getElementById("wheelCanvas");
+            if(!canvas) return;
+            const ctx = canvas.getContext("2d");
+            const size = canvas.width;
+            const center = size / 2;
+            const radius = center - 12;
+            ctx.clearRect(0, 0, size, size);
+            
+            if(names.length === 0) return;
+            const arc = Math.PI / (names.length / 2);
+
+            names.forEach((name, i) => {
+                const angle = startAngle + i * arc;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.beginPath(); ctx.moveTo(center, center);
+                ctx.arc(center, center, radius, angle, angle + arc, false);
+                ctx.fill();
+                
+                ctx.save();
+                ctx.fillStyle = "white"; ctx.translate(center, center); ctx.rotate(angle + arc/2);
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                ctx.font = "bold 30px Battambang, Arial";
+                ctx.fillText(name, radius - 50, 0);
+                ctx.restore();
+            });
+        }
+
+        function spinWheel() {
+            if (isSpinning || names.length < 2) return;
+            isSpinning = true;
+            let duration = 4000;
+            let start = null;
+            let initialRotation = startAngle;
+            let totalRotation = Math.PI * 12 + Math.random() * Math.PI * 6;
+
+            function animate(timestamp) {
+                if (!start) start = timestamp;
+                let progress = timestamp - start;
+                let ease = 1 - Math.pow(1 - progress / duration, 3);
+                startAngle = initialRotation + totalRotation * ease;
+                drawWheel();
+                if (progress < duration) requestAnimationFrame(animate);
+                else { isSpinning = false; checkWinner(); }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function checkWinner() {
+            const arc = Math.PI / (names.length / 2);
+            const degrees = (startAngle * 180 / Math.PI) + 90;
+            const index = Math.floor((360 - (degrees % 360)) / (arc * 180 / Math.PI)) % names.length;
+            document.getElementById('winnerNameDisplay').innerText = names[index];
+            document.getElementById('winnerPanel').style.display = 'flex';
+        }
+
+        function closeWinner() { document.getElementById('winnerPanel').style.display = 'none'; }
+        function showNamePanel() { document.getElementById('namePanel').style.display = 'flex'; updateList(); }
+        function hideNamePanel() { document.getElementById('namePanel').style.display = 'none'; drawWheel(); }
+        function addName() {
+            let val = document.getElementById('newName').value.trim();
+            if(val) { names.push(val); document.getElementById('newName').value = ""; updateList(); }
+        }
+        function removeName(i) { names.splice(i, 1); updateList(); }
+        function clearAllNames() { names = []; updateList(); }
+        function updateList() {
+            const list = document.getElementById('nameList');
+            list.innerHTML = names.map((n, i) => `<li>${n} <span style="color:red; font-size:24px; cursor:pointer;" onclick="removeName(${i})">✕</span></li>`).join('');
+        }
+
+        window.onload = drawWheel;
+        window.addEventListener('resize', drawWheel);
+    </script>
+</div>
