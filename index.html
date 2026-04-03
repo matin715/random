@@ -1,0 +1,244 @@
+<div id="wheelBox" class="fn-area">
+    <div class="ultimate-wheel-wrapper">
+        
+        <!-- Header Section -->
+        <div class="wheel-header">
+            <h2 class="wheel-title-big">កង់បង្វិលសំណាង</h2>
+            <button class="add-name-btn-big" onclick="showNamePanel()">
+                <i class="fas fa-plus-circle"></i> បញ្ចូលឈ្មោះ
+            </button>
+        </div>
+
+        <hr class="full-divider">
+
+        <!-- Main Body -->
+        <div class="wheel-body-container">
+            <div class="wheel-section">
+                <div class="wheel-container">
+                    <div class="pointer-fixed"></div>
+                    <canvas id="wheelCanvas" width="800" height="800"></canvas>
+                    <div class="spin-btn-fixed" onclick="spinWheel()">SPIN</div>
+                </div>
+            </div>
+
+            <!-- បញ្ជីអ្នកឈ្នះ -->
+            <div id="historySection" class="winners-history-section" style="display: none;">
+                <div class="history-title">🏆 បញ្ជីឈ្មោះអ្នកឈ្នះ</div>
+                <div id="winnersLog" class="winners-log-list"></div>
+            </div>
+        </div>
+
+        <!-- 👑 ផ្ទាំងបញ្ចូលឈ្មោះថ្មី (ធំ និងថេរពេញអេក្រង់) -->
+        <div id="namePanel" class="modal-full">
+            <div class="modal-box-full">
+                <div class="modal-header-big">
+                    <h2 style="margin:0; font-size: 32px; color: #ff1493; font-weight: 900;">បញ្ជីឈ្មោះ</h2>
+                    <button onclick="clearAllNames()" class="btn-clear-big">លុបទាំងអស់</button>
+                </div>
+                
+                <hr class="full-divider" style="background: #eee;">
+                
+                <div class="input-wrap-big">
+                    <input type="text" id="newName" placeholder="សរសេរឈ្មោះនៅទីនេះ...">
+                    <button onclick="addName()" class="btn-add-action">ថែមឈ្មោះ</button>
+                </div>
+
+                <!-- កន្លែងបង្ហាញឈ្មោះ អាចអូសឡើងលើចុះក្រោមបាន -->
+                <div class="list-container-big">
+                    <ul id="nameList"></ul>
+                </div>
+
+                <div class="modal-footer-big">
+                    <button class="btn-primary-big-final" onclick="hideNamePanel()">រួចរាល់</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Popup អ្នកឈ្នះ -->
+        <div id="winnerPanel" class="modal-full-winner" style="display: none;">
+            <div class="winner-box-big">
+                <h1 style="color:#333; margin:0; font-size: 45px;">🎊 អបអរសាទរ! 🎊</h1>
+                <div id="winnerNameDisplay" class="winner-name-text-big">---</div>
+                <hr class="full-divider" style="margin: 30px 0;">
+                <button class="btn-primary-big-final" onclick="closeWinner()">បិទ</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .ultimate-wheel-wrapper {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #ff1493; display: flex; flex-direction: column;
+            overflow-x: hidden; overflow-y: auto; font-family: 'Battambang', Arial;
+        }
+
+        .full-divider { width: 100%; border: 0; height: 2px; background: rgba(255,255,255,0.4); margin: 0; }
+
+        /* Header */
+        .wheel-header { flex: 0 0 auto; padding: 25px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .wheel-title-big { color: yellow; margin: 0; font-size: 38px; font-weight: 900; text-shadow: 3px 3px 6px rgba(0,0,0,0.5); }
+        .add-name-btn-big { padding: 18px 25px; border-radius: 40px; border: 4px solid white; background: white; color: #ff1493; font-weight: 900; font-size: 24px; cursor: pointer; }
+
+        /* Wheel Container */
+        .wheel-body-container { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .wheel-section { width: 100%; display: flex; justify-content: center; padding: 15px 0; }
+        .wheel-container { position: relative; width: 95vw; height: 95vw; max-width: 80vh; max-height: 80vh; }
+        #wheelCanvas { width: 100%; height: 100%; border-radius: 50%; border: 6px solid white; background: #fff; }
+        .spin-btn-fixed { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 22%; height: 22%; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #ff1493; border: 5px solid #ff1493; font-size: 24px; z-index: 50; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+        .pointer-fixed { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 22px solid transparent; border-right: 22px solid transparent; border-top: 55px solid yellow; z-index: 60; }
+
+        /* 👑 Style សម្រាប់ផ្ទាំងបញ្ចូលឈ្មោះថ្មី */
+        .modal-full { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; display: none; z-index: 2000; 
+        }
+        .modal-box-full { 
+            width: 100%; height: 100%; display: flex; flex-direction: column; 
+        }
+        .modal-header-big { padding: 25px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        
+        .input-wrap-big { 
+            padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #fdfdfd;
+        }
+        .input-wrap-big input { 
+            width: 100%; padding: 25px; border: 4px solid #ff1493; border-radius: 20px; 
+            font-size: 28px; outline: none; box-sizing: border-box; font-weight: bold;
+        }
+        .btn-add-action { 
+            width: 100%; padding: 20px; background: #28a745; color: white; border: none; 
+            border-radius: 20px; font-size: 26px; font-weight: bold; cursor: pointer;
+        }
+
+        .list-container-big { 
+            flex: 1; overflow-y: auto; padding: 10px 20px; background: #f0f0f0;
+        }
+        #nameList { list-style: none; padding: 0; margin: 0; }
+        #nameList li { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 22px 25px; background: white; margin-bottom: 12px; 
+            border-radius: 18px; font-size: 30px; font-weight: 900; color: #333;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .btn-delete-name { color: #ff4444; font-size: 35px; font-weight: bold; cursor: pointer; padding: 0 10px; }
+
+        .modal-footer-big { padding: 20px; background: white; border-top: 1px solid #eee; }
+        .btn-primary-big-final { 
+            width: 100%; padding: 25px; background: #ff1493; color: white; border: none; 
+            border-radius: 25px; font-size: 32px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 20, 147, 0.3);
+        }
+        .btn-clear-big { background: #666; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 18px; font-weight: bold; }
+
+        /* Popup អ្នកឈ្នះ */
+        .modal-full-winner { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; z-index: 3000; align-items: center; justify-content: center; }
+        .winner-box-big { background: white; width: 90%; max-width: 600px; padding: 60px 30px; border-radius: 50px; text-align: center; border: 6px solid #ff1493; }
+        .winner-name-text-big { font-size: 90px; font-weight: 900; color: #ff1493; margin: 40px 0; }
+
+        /* តារាងអ្នកឈ្នះ */
+        .winners-history-section { width: 94%; background: rgba(255, 255, 255, 0.2); margin: 20px 0; border-radius: 20px; border: 2px solid white; overflow: hidden; }
+        .history-title { padding: 15px; text-align: center; color: white; font-weight: bold; font-size: 24px; background: rgba(0,0,0,0.1); }
+        .winners-log-list { padding: 15px; }
+        .winner-item { background: white; padding: 18px 25px; border-radius: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; font-size: 26px; font-weight: bold; color: #333; }
+        .winner-rank { color: #ff1493; margin-right: 15px; border-right: 2px solid #eee; padding-right: 15px; }
+    </style>
+
+    <script>
+        let names = ["ហេង", "សំណាង", "លាភ", "ជ័យ", "មាស", "ប្រាក់"];
+        let winnerHistory = [];
+        const colors = ["#ff1493", "#333333", "#ff69b4", "#1a1a1a", "#ff007f", "#444444"];
+        let startAngle = 0;
+        let isSpinning = false;
+
+        function drawWheel() {
+            const canvas = document.getElementById("wheelCanvas");
+            if(!canvas) return;
+            const ctx = canvas.getContext("2d");
+            const size = canvas.width;
+            const center = size / 2;
+            const radius = center - 10;
+            ctx.clearRect(0, 0, size, size);
+            if(names.length === 0) {
+                ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "30px Battambang";
+                ctx.fillText("សូមបញ្ចូលឈ្មោះ", center, center); return;
+            }
+            const arc = Math.PI / (names.length / 2);
+            names.forEach((name, i) => {
+                const angle = startAngle + i * arc;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.beginPath(); ctx.moveTo(center, center);
+                ctx.arc(center, center, radius, angle, angle + arc, false);
+                ctx.fill();
+                ctx.save();
+                ctx.fillStyle = "white"; ctx.translate(center, center); ctx.rotate(angle + arc/2);
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                ctx.font = "bold 40px Battambang, Arial";
+                ctx.fillText(name, radius - 60, 0);
+                ctx.restore();
+            });
+        }
+
+        function spinWheel() {
+            if (isSpinning || names.length < 2) return;
+            isSpinning = true;
+            let duration = 4000;
+            let start = null;
+            let initialRotation = startAngle;
+            let totalRotation = Math.PI * 15 + Math.random() * Math.PI * 10;
+            function animate(timestamp) {
+                if (!start) start = timestamp;
+                let progress = timestamp - start;
+                let ease = 1 - Math.pow(1 - progress / duration, 3);
+                startAngle = initialRotation + totalRotation * ease;
+                drawWheel();
+                if (progress < duration) requestAnimationFrame(animate);
+                else { isSpinning = false; checkWinner(); }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function checkWinner() {
+            const arc = Math.PI / (names.length / 2);
+            const degrees = (startAngle * 180 / Math.PI) + 90;
+            const index = Math.floor((360 - (degrees % 360)) / (arc * 180 / Math.PI)) % names.length;
+            const winner = names[index];
+            winnerHistory.push(winner); 
+            document.getElementById('historySection').style.display = 'block';
+            updateWinnerLog();
+            document.getElementById('winnerNameDisplay').innerText = winner;
+            document.getElementById('winnerPanel').style.display = 'flex';
+        }
+
+        function updateWinnerLog() {
+            const logBox = document.getElementById('winnersLog');
+            logBox.innerHTML = winnerHistory.map((name, i) => `
+                <div class="winner-item">
+                    <span><span class="winner-rank">លេខ ${i + 1}</span> ${name}</span>
+                    <span>🎊</span>
+                </div>
+            `).join('');
+        }
+
+        function closeWinner() { document.getElementById('winnerPanel').style.display = 'none'; }
+        function showNamePanel() { document.getElementById('namePanel').style.display = 'block'; updateList(); }
+        function hideNamePanel() { document.getElementById('namePanel').style.display = 'none'; drawWheel(); }
+        
+        function addName() {
+            let val = document.getElementById('newName').value.trim();
+            if(val) { names.push(val); document.getElementById('newName').value = ""; updateList(); }
+        }
+        function removeName(i) { names.splice(i, 1); updateList(); }
+        function clearAllNames() { if(confirm("លុបឈ្មោះទាំងអស់?")) { names = []; updateList(); } }
+
+        function updateList() {
+            const list = document.getElementById('nameList');
+            list.innerHTML = names.map((n, i) => `
+                <li>
+                    <span>${n}</span> 
+                    <span class="btn-delete-name" onclick="removeName(${i})">✕</span>
+                </li>`).join('');
+        }
+
+        window.onload = drawWheel;
+        window.addEventListener('resize', drawWheel);
+    </script>
+</div>
